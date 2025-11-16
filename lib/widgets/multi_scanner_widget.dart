@@ -5,6 +5,7 @@ import 'package:fpdart/fpdart.dart' hide State;
 import 'package:conduit/bridge_generated.dart/lib.dart';
 import 'package:conduit/utils/notification_utils.dart';
 import 'package:conduit/utils/drawer_utils.dart';
+import 'package:conduit/utils/fp_utils.dart';
 import 'package:conduit/widgets/async_action_button.dart';
 import 'package:conduit/widgets/amount_display.dart';
 import 'package:conduit/widgets/navigation_button.dart';
