@@ -180,6 +180,47 @@ pub fn parse_lnurl(request: String) -> Option<LnurlWrapper> {
     None
 }
 
+#[frb]
+pub struct MoneyBadgerWrapper(String);
+
+#[frb(sync)]
+pub fn parse_money_badger(input: String) -> Option<MoneyBadgerWrapper> {
+    // Check if input matches Money Badger / Pick n Pay QR code pattern
+    if input.contains("za.co.electrum.picknpay") {
+        return Some(MoneyBadgerWrapper(input));
+    }
+
+    None
+}
+
+#[frb]
+pub async fn resolve_money_badger(mb: MoneyBadgerWrapper) -> Result<Bolt11InvoiceWrapper, String> {
+    // Make HTTP request to Money Badger parser
+    let url = format!("https://cryptoqr.net/.well-known/lnurlp/{}", mb.0);
+
+    let response = reqwest::get(url)
+        .await
+        .map_err(|_| "Failed to fetch LNURL".to_string())?
+        .json::<LnUrlPayResponse>()
+        .await
+        .map_err(|_| "Failed to parse LNURL response".to_string())?;
+
+    if response.min_sendable != response.max_sendable {
+        return Err("Amount ist not fixed".to_string());
+    }
+
+    let callback_url = format!("{}?amount={}", response.callback, response.min_sendable);
+
+    let response = reqwest::get(callback_url)
+        .await
+        .map_err(|_| "Failed to fetch LNURL callback".to_string())?
+        .json::<LnUrlPayInvoiceResponse>()
+        .await
+        .map_err(|_| "Failed to parse LNURL callback response".to_string())?;
+
+    Ok(Bolt11InvoiceWrapper(response.pr))
+}
+
 #[derive(Deserialize)]
 struct LnUrlPayResponse {
     callback: String,
